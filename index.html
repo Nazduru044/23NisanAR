@@ -3,35 +3,38 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <title>23 Nisan AR - Projesi</title>
+    <title>23 Nisan AR Projesi</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; }
-      /* Yükleme ekranını ve başlat butonunu özelleştirelim */
+      body { margin: 0; overflow: hidden; background-color: #000; }
+      
+      /* Başlat Butonu */
       #startButton {
-        position: absolute; z-index: 1000; bottom: 40px; left: 50%;
-        transform: translateX(-50%); padding: 15px 30px;
-        font-size: 18px; font-weight: bold; background-color: #E30A17;
-        color: white; border: none; border-radius: 10px; cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
+        position: absolute; z-index: 1000; top: 50%; left: 50%;
+        transform: translate(-50%, -50%); padding: 20px 40px;
+        font-size: 20px; font-weight: bold; background-color: #E30A17;
+        color: white; border: none; border-radius: 50px; cursor: pointer;
+        box-shadow: 0 0 20px rgba(227, 10, 23, 0.6); font-family: sans-serif;
       }
-      /* Video yüklenirken kullanıcıyı bilgilendiren küçük bir yazı */
-      #loadingHint {
-        position: absolute; z-index: 1000; bottom: 15px; left: 50%;
+
+      /* Yükleme Yazısı (Video büyük olduğu için önemli) */
+      #loadingText {
+        position: absolute; z-index: 999; top: 65%; left: 50%;
         transform: translateX(-50%); color: white; font-family: sans-serif;
-        font-size: 12px; text-shadow: 1px 1px 2px black;
+        display: none; text-align: center;
       }
     </style>
   </head>
   <body>
 
     <button id="startButton">Deneyimi Başlat</button>
-    <div id="loadingHint">Video boyutu büyükse yüklenme biraz zaman alabilir...</div>
+    <div id="loadingText">Materyaller Hazırlanıyor... <br> (Video boyutu büyükse biraz sürebilir)</div>
 
-    <a-scene mindar-image="imageTargetSrc: nisan23.mind; autoStart: true; uiLoading: yes; uiScanning: yes;" 
+    <a-scene id="ar-scene" 
+             mindar-image="imageTargetSrc: nisan23.mind; autoStart: false; uiLoading: no; uiScanning: yes;" 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" 
@@ -39,7 +42,7 @@
       
       <a-assets>
         <video id="nisanVideo" src="nisan23.mp4" 
-               preload="metadata" loop crossorigin="anonymous" 
+               preload="auto" loop crossorigin="anonymous" 
                playsinline webkit-playsinline></video>
       </a-assets>
 
@@ -56,29 +59,38 @@
     </a-scene>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const video = document.querySelector('#nisanVideo');
-        const target = document.querySelector('#target');
-        const startButton = document.querySelector('#startButton');
-        const hint = document.querySelector('#loadingHint');
+      const sceneEl = document.querySelector('#ar-scene');
+      const startButton = document.querySelector('#startButton');
+      const loadingText = document.querySelector('#loadingText');
+      const video = document.querySelector('#nisanVideo');
 
-        // Kullanıcı butona bastığında hem videoyu hem sesi hazırlıyoruz
-        startButton.addEventListener('click', () => {
-          startButton.style.display = 'none';
-          hint.style.display = 'none';
-          video.play().then(() => {
-            video.pause(); // İzin alındı, şimdi resmin bulunmasını bekliyoruz
-          });
-        });
+      startButton.addEventListener('click', () => {
+        // Butonu kaldır ve yükleniyor yazısını göster
+        startButton.style.display = 'none';
+        loadingText.style.display = 'block';
 
-        target.addEventListener("targetFound", () => {
-          console.log("23 Nisan Resmi Tespit Edildi!");
-          video.play();
-        });
+        // 1. Kamerayı başlat (İzin penceresi şimdi açılacak)
+        const { system } = sceneEl;
+        system.getService('mindar-image-system').start(); 
 
-        target.addEventListener("targetLost", () => {
-          video.pause();
+        // 2. Videoyu arka planda hazırla
+        video.play().then(() => {
+          video.pause(); // Sadece izin almak için kısa süreli oynat/dur
+          loadingText.style.display = 'none'; // Hazır olduğunda yazıyı kaldır
+        }).catch(err => {
+          console.error("Video başlatılamadı:", err);
         });
+      });
+
+      // Hedef bulunduğunda
+      const targetEntity = document.querySelector('#target');
+      targetEntity.addEventListener("targetFound", () => {
+        video.play();
+      });
+
+      // Hedef kaybedildiğinde
+      targetEntity.addEventListener("targetLost", () => {
+        video.pause();
       });
     </script>
   </body>
