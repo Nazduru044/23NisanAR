@@ -2,64 +2,71 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>23 Nisan AR Projesi</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>23 Nisan AR</title>
+    
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.1/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; }
         
-        /* Başlat Ekranı */
-        #overlay {
+        /* Başlat Butonu Tasarımı */
+        #start-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #2c3e50; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 1000; color: white;
+            background: #ba2727; /* Türk bayrağı kırmızısına yakın */
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999; color: white; text-align: center;
         }
 
         #start-btn {
-            padding: 20px 40px; font-size: 20px; cursor: pointer;
-            background: #e74c3c; color: white; border: none; border-radius: 10px;
-            font-weight: bold; margin-top: 20px;
+            padding: 18px 40px; font-size: 22px; cursor: pointer;
+            background: white; color: #ba2727; border: none;
+            border-radius: 30px; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-top: 20px;
         }
 
-        /* Tarama Göstergesi */
-        #scanning-indicator {
-            display: none; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); color: white;
-            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;
-            z-index: 5; pointer-events: none;
+        /* Yükleniyor Yazısı */
+        #loading-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; background: rgba(0,0,0,0.7);
+            padding: 10px 20px; border-radius: 5px;
+            display: none; z-index: 10;
         }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <h2>23 Nisan AR Uygulaması</h2>
-        <p>Hazırsanız aşağıdaki butona basın</p>
-        <button id="start-btn">DENEYİMİ BAŞLAT</button>
+    <div id="start-screen">
+        <h1 style="font-family: sans-serif;">23 Nisan AR Projesi</h1>
+        <p>Devam etmek için butona dokunun.</p>
+        <button id="start-btn">KAMERAYI AÇ</button>
     </div>
 
-    <div id="scanning-indicator">Lütfen resmi kameraya odaklayın...</div>
+    <div id="loading-text">Kamera ve AR yükleniyor...</div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./nisan23.mind; autoStart: false; uiScanning: #scanning-indicator;" 
-        embedded color-space="sRGB" 
+        mindar-image="imageTargetSrc: ./nisan23.mind; autoStart: false; uiScanning: #loading-text;" 
+        embedded
+        color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
         device-orientation-permission-ui="enabled: false">
         
         <a-assets>
-            <video id="ar-video" src="./nisan23.mp4" 
+            <video id="nisanVideo" src="./nisan23.mp4" 
                 preload="auto" loop="true" crossorigin="anonymous" 
                 webkit-playsinline playsinline>
             </video>
         </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity id="target" mindar-image-target="targetIndex: 0">
-            <a-video src="#ar-video" 
+            <a-video id="video-screen" src="#nisanVideo" 
                 width="1" height="0.605" 
                 position="0 0 0"
                 rotation="0 0 0">
@@ -69,39 +76,36 @@
 
     <script>
         const startBtn = document.querySelector('#start-btn');
-        const overlay = document.querySelector('#overlay');
+        const startScreen = document.querySelector('#start-screen');
         const sceneEl = document.querySelector('a-scene');
-        const video = document.querySelector('#ar-video');
+        const video = document.querySelector('#nisanVideo');
         const targetEntity = document.querySelector('#target');
 
-        // 1. BAŞLATMA MANTIĞI
         startBtn.addEventListener('click', () => {
-            overlay.style.display = 'none'; // Ekranı kapat
+            // 1. Giriş ekranını kaldır
+            startScreen.style.display = 'none';
             
-            // Mind-AR'ı başlat
+            // 2. Videoyu sessiz başlat-durdur (Tarayıcı kilidini açar)
+            video.play();
+            video.pause();
+            
+            // 3. AR Sistemini başlat
             const { systems } = sceneEl;
-            systems['mindar-image-system'].start(); 
-            
-            // Videoyu "uyandır" (Mobil kısıtlamayı aşmak için)
-            video.play().then(() => {
-                video.pause();
-            });
+            if (systems['mindar-image-system']) {
+                systems['mindar-image-system'].start();
+            } else {
+                console.error("Mind-AR sistemi yüklenemedi!");
+            }
         });
 
-        // 2. TAKİP MANTIĞI
+        // Takip olayları
         targetEntity.addEventListener("targetFound", () => {
-            console.log("Hedef bulundu, video başlıyor.");
+            console.log("Resim bulundu!");
             video.play();
         });
 
         targetEntity.addEventListener("targetLost", () => {
-            console.log("Hedef kayboldu, video durdu.");
             video.pause();
-        });
-
-        // 3. HATA YAKALAMA (Konsolda görünür)
-        sceneEl.addEventListener("arError", (event) => {
-            alert("AR Başlatılamadı! Kamera iznini kontrol edin.");
         });
     </script>
 </body>
