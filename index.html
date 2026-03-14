@@ -3,86 +3,80 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <title>23 Nisan AR Deneyimi</title>
+    <title>23 Nisan AR - Projesi</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-      }
-      /* 23 Nisan temalı kırmızı Başlat butonu */
+      body { margin: 0; overflow: hidden; }
+      /* Yükleme ekranını ve başlat butonunu özelleştirelim */
       #startButton {
-        position: absolute;
-        z-index: 1000;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 15px 30px;
-        font-size: 18px;
-        font-weight: bold;
-        background-color: #E30A17; /* Bayrak Kırmızısı */
-        color: white;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        font-family: sans-serif;
+        position: absolute; z-index: 1000; bottom: 40px; left: 50%;
+        transform: translateX(-50%); padding: 15px 30px;
+        font-size: 18px; font-weight: bold; background-color: #E30A17;
+        color: white; border: none; border-radius: 10px; cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: sans-serif;
       }
-      #startButton:active {
-        background-color: #B30812;
+      /* Video yüklenirken kullanıcıyı bilgilendiren küçük bir yazı */
+      #loadingHint {
+        position: absolute; z-index: 1000; bottom: 15px; left: 50%;
+        transform: translateX(-50%); color: white; font-family: sans-serif;
+        font-size: 12px; text-shadow: 1px 1px 2px black;
       }
     </style>
   </head>
   <body>
-    <button id="startButton">23 Nisan AR'ı Başlat</button>
 
-    <a-scene mindar-image="imageTargetSrc: nisan23.mind; autoStart: true;" 
+    <button id="startButton">Deneyimi Başlat</button>
+    <div id="loadingHint">Video boyutu büyükse yüklenme biraz zaman alabilir...</div>
+
+    <a-scene mindar-image="imageTargetSrc: nisan23.mind; autoStart: true; uiLoading: yes; uiScanning: yes;" 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" 
              device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="nisanVideo" src="nisan23.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="nisanVideo" src="nisan23.mp4" 
+               preload="metadata" loop crossorigin="anonymous" 
+               playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-video src="#nisanVideo" position="0 0 0" height="1.45" width="1" rotation="0 0 0"></a-video>
+        <a-video src="#nisanVideo" 
+                 position="0 0 0" 
+                 width="1.65" 
+                 height="1" 
+                 rotation="0 0 0"></a-video>
       </a-entity>
       
     </a-scene>
 
     <script>
-      // Sayfa yüklendiğinde çalışacak script
       document.addEventListener("DOMContentLoaded", function() {
         const video = document.querySelector('#nisanVideo');
         const target = document.querySelector('#target');
         const startButton = document.querySelector('#startButton');
+        const hint = document.querySelector('#loadingHint');
 
-        // 1. Butona tıklandığında videonun oynatma iznini al
+        // Kullanıcı butona bastığında hem videoyu hem sesi hazırlıyoruz
         startButton.addEventListener('click', () => {
-          startButton.style.display = 'none'; // Butonu gizle
+          startButton.style.display = 'none';
+          hint.style.display = 'none';
           video.play().then(() => {
-            video.pause(); // Sadece izin almak için oynatıp durduruyoruz
-          }).catch((error) => {
-            console.warn("Video oynatma izni alınamadı:", error);
+            video.pause(); // İzin alındı, şimdi resmin bulunmasını bekliyoruz
           });
         });
 
-        // 2. Kamera resmi gördüğünde videoyu başlat
         target.addEventListener("targetFound", () => {
-          console.log("Resim Bulundu!");
+          console.log("23 Nisan Resmi Tespit Edildi!");
           video.play();
         });
 
-        // 3. Kamera resimden uzaklaştığında videoyu durdur
         target.addEventListener("targetLost", () => {
-          console.log("Resim Kaybedildi!");
           video.pause();
         });
       });
