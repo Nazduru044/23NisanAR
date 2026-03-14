@@ -1,32 +1,39 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="tr">
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mona Lisa AR Project</title>
+    <title>Mona Lisa AR - Stabil Sürüm</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; }
-      /* Başlatma Butonu (Tarayıcıların video engeli için gerekli) */
-      #ui-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7); display: flex; justify-content: center;
-        align-items: center; z-index: 1000; color: white; font-family: sans-serif;
-      }
-      #ui-overlay button {
-        padding: 15px 30px; font-size: 18px; cursor: pointer; border-radius: 10px; border: none;
-      }
+        body { margin: 0; overflow: hidden; }
+        
+        /* Giriş Ekranı: Yuvarlak dönme sorununu bu buton çözer */
+        #ui-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 9999; color: white; font-family: sans-serif;
+        }
+        #startButton {
+            padding: 20px 40px; font-size: 20px; background: #2ecc71;
+            color: white; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #startButton:active { transform: scale(0.95); }
+        p { margin-top: 15px; font-size: 14px; opacity: 0.8; }
     </style>
-  </head>
+</head>
 
-  <body>
+<body>
     <div id="ui-overlay">
-      <button id="startButton">Deneyimi Başlat</button>
+        <button id="startButton">KAMERAYI AÇ VE BAŞLAT</button>
+        <p>Mona Lisa tablosunu taramak için izin verin.</p>
     </div>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./mona.mind; autoStart: false;" 
+      mindar-image="imageTargetSrc: ./mona.mind; autoStart: false; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
@@ -57,23 +64,32 @@
       const sceneEl = document.querySelector('a-scene');
       const video = document.querySelector('#monaVideo');
 
-      // Başlat butona tıklandığında AR'ı ve Videoyu tetikle
+      // Başlat butonu mekanizması
       startButton.addEventListener('click', () => {
+        // 1. Arayüzü gizle
         uiOverlay.style.display = 'none';
-        sceneEl.systems["mindar-image-system"].start(); // AR'ı başlat
+        
+        // 2. Videoyu "sessiz" bir şekilde önden tetikle (Tarayıcı izni için)
+        video.play().then(() => {
+            video.pause(); // Sadece yetki aldık, tarama bitene kadar durduruyoruz
+        }).catch(err => console.log("Video yetki hatası:", err));
+
+        // 3. AR Sistemini başlat
+        sceneEl.systems["mindar-image-system"].start();
       });
 
-      // Hedef resim görüldüğünde videoyu oynat, kaybolduğunda durdur
+      // Hedef Takibi
       const monaTarget = document.querySelector('#mona-target');
-      monaTarget.addEventListener("targetFound", event => {
-        console.log("Mona Lisa bulundu!");
+      
+      monaTarget.addEventListener("targetFound", () => {
+        console.log("Tablo bulundu, video başlıyor.");
         video.play();
       });
 
-      monaTarget.addEventListener("targetLost", event => {
-        console.log("Hedef kayboldu.");
+      monaTarget.addEventListener("targetLost", () => {
+        console.log("Tablo kayboldu, video durdu.");
         video.pause();
       });
     </script>
-  </body>
+</body>
 </html>
