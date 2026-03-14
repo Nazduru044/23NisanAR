@@ -3,45 +3,52 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
-    <title>23 Nisan AR Projesi</title>
+    <title>Mona Lisa AR Deneyimi</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; background-color: #000; }
+      body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
       
-      /* Başlat Butonu */
-      #startButton {
-        position: absolute; z-index: 1000; top: 50%; left: 50%;
-        transform: translate(-50%, -50%); padding: 20px 40px;
-        font-size: 20px; font-weight: bold; background-color: #E30A17;
-        color: white; border: none; border-radius: 50px; cursor: pointer;
-        box-shadow: 0 0 20px rgba(227, 10, 23, 0.6); font-family: sans-serif;
+      /* Başlatma Ekranı Tasarımı */
+      #overlay {
+        position: absolute; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.8); color: white; font-family: sans-serif;
       }
 
-      /* Yükleme Yazısı (Video büyük olduğu için önemli) */
-      #loadingText {
-        position: absolute; z-index: 999; top: 65%; left: 50%;
-        transform: translateX(-50%); color: white; font-family: sans-serif;
-        display: none; text-align: center;
+      #startButton {
+        padding: 20px 40px; font-size: 20px; font-weight: bold;
+        background-color: #c5a059; /* Sanat temalı altın rengi */
+        color: black; border: none; border-radius: 50px; cursor: pointer;
+        box-shadow: 0 4px 15px rgba(197, 160, 89, 0.4); transition: 0.3s;
       }
+
+      #startButton:hover { transform: scale(1.05); background-color: #d4b475; }
+
+      #statusText { margin-top: 15px; font-size: 14px; color: #aaa; text-align: center; }
+
+      /* Tarayıcı varsayılan yükleme ikonunu gizlemek istersen */
+      .mindar-ui-loading { display: none !important; }
     </style>
   </head>
   <body>
 
-    <button id="startButton">Deneyimi Başlat</button>
-    <div id="loadingText">Materyaller Hazırlanıyor... <br> (Video boyutu büyükse biraz sürebilir)</div>
+    <div id="overlay">
+      <button id="startButton">Deneyimi Başlat</button>
+      <div id="statusText">Kamera izni ve video yüklemesi için butona tıklayın.</div>
+    </div>
 
     <a-scene id="ar-scene" 
-             mindar-image="imageTargetSrc: nisan23.mind; autoStart: false; uiLoading: no; uiScanning: yes;" 
+             mindar-image="imageTargetSrc: mona.mind; autoStart: false; uiScanning: yes;" 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" 
              device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <video id="nisanVideo" src="nisan23.mp4" 
+        <video id="monaVideo" src="mona.mp4" 
                preload="auto" loop crossorigin="anonymous" 
                playsinline webkit-playsinline></video>
       </a-assets>
@@ -49,7 +56,7 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <a-video src="#nisanVideo" 
+        <a-video src="#monaVideo" 
                  position="0 0 0" 
                  width="1.65" 
                  height="1" 
@@ -61,34 +68,36 @@
     <script>
       const sceneEl = document.querySelector('#ar-scene');
       const startButton = document.querySelector('#startButton');
-      const loadingText = document.querySelector('#loadingText');
-      const video = document.querySelector('#nisanVideo');
+      const overlay = document.querySelector('#overlay');
+      const statusText = document.querySelector('#statusText');
+      const video = document.querySelector('#monaVideo');
 
       startButton.addEventListener('click', () => {
-        // Butonu kaldır ve yükleniyor yazısını göster
-        startButton.style.display = 'none';
-        loadingText.style.display = 'block';
-
-        // 1. Kamerayı başlat (İzin penceresi şimdi açılacak)
+        statusText.innerText = "Kamera açılıyor ve video hazırlanıyor...";
+        
+        // 1. AR Sistemini başlat (İzin penceresi şimdi çıkar)
         const { system } = sceneEl;
         system.getService('mindar-image-system').start(); 
 
-        // 2. Videoyu arka planda hazırla
+        // 2. Videoyu kullanıcı etkileşimiyle "unlock" et
         video.play().then(() => {
-          video.pause(); // Sadece izin almak için kısa süreli oynat/dur
-          loadingText.style.display = 'none'; // Hazır olduğunda yazıyı kaldır
+          video.pause(); // Sadece izin almak için oynat-dur yapıyoruz
+          overlay.style.display = 'none'; // Arayüzü kapat
         }).catch(err => {
-          console.error("Video başlatılamadı:", err);
+          console.error("Video hatası:", err);
+          // Video hala yüklenmemiş olabilir, arayüzü kapatıp devam edelim
+          overlay.style.display = 'none';
         });
       });
 
-      // Hedef bulunduğunda
+      // Takip Mantığı
       const targetEntity = document.querySelector('#target');
+      
       targetEntity.addEventListener("targetFound", () => {
+        console.log("Mona Lisa Bulundu!");
         video.play();
       });
 
-      // Hedef kaybedildiğinde
       targetEntity.addEventListener("targetLost", () => {
         video.pause();
       });
